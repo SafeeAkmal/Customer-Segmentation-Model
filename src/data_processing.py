@@ -10,29 +10,42 @@ from sklearn.impute import SimpleImputer
 
 
 def load_data(csv_path: str) -> pd.DataFrame:
-    # Read without parse_dates to avoid column space validation error
-    df = pd.read_csv(csv_path, sep="\t", dayfirst=True, encoding="latin-1")
-    # Strip leading/trailing spaces from column names (CSV has spaces in headers)
+    df = pd.read_csv(
+        csv_path,
+        sep="\t",
+        encoding="latin-1"
+    )
+
+    # Strip whitespace from column names
     df.columns = df.columns.str.strip()
-    # Parse date column after stripping column names
-    df["Dt_Customer"] = pd.to_datetime(df["Dt_Customer"], dayfirst=True)
-    
-    # Ensure numeric columns are properly typed (header spaces can interfere with inference)
+
+    # Strip whitespace from all string value columns
+    str_cols = df.select_dtypes(include="object").columns
+    df[str_cols] = df[str_cols].apply(lambda col: col.str.strip())
+
+    # Convert columns that should be numeric but were read as strings due to padding
     numeric_cols = [
-        "Age", "Year_Birth", "Income", "Kidhome", "Teenhome", "Recency",
-        "MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts", "MntSweetProducts", "MntGoldProds",
-        "NumDealsPurchases", "NumWebPurchases", "NumCatalogPurchases", "NumStorePurchases", "NumWebVisitsMonth",
-        "AcceptedCmp1", "AcceptedCmp2", "AcceptedCmp3", "AcceptedCmp4", "AcceptedCmp5",
-        "Complain", "Z_CostContact", "Z_Revenue", "Response", "ID"
+        "Income", "Year_Birth", "Kidhome", "Teenhome", "Recency",
+        "MntWines", "MntFruits", "MntMeatProducts", "MntFishProducts",
+        "MntSweetProducts", "MntGoldProds", "NumDealsPurchases",
+        "NumWebPurchases", "NumCatalogPurchases", "NumStorePurchases",
+        "NumWebVisitsMonth", "AcceptedCmp1", "AcceptedCmp2", "AcceptedCmp3",
+        "AcceptedCmp4", "AcceptedCmp5", "Response", "Complain",
+        "Z_CostContact", "Z_Revenue", "ID"
     ]
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-    
+
+    # Parse date column after column names and types are clean
+    df["Dt_Customer"] = pd.to_datetime(df["Dt_Customer"], dayfirst=True)
+
     return df
 
-
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    # Strip whitespace from all string columns — raw CSV has padded values
+    df['Marital_Status'] = df['Marital_Status'].str.strip()
+    df['Education']      = df['Education'].str.strip()
     # Drop rows with dirty Marital_Status values
     df = df[~df["Marital_Status"].isin(["Absurd", "YOLO", "Alone"])]
 
