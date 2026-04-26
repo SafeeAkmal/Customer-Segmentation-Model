@@ -3,10 +3,11 @@ import pandas as pd
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.base import BaseEstimator
 from typing import Any, Dict, Tuple
-
-from evaluation import evaluate_clustering
-
-
+try:
+    from .evaluation import evaluate_clustering
+except ImportError:
+    from evaluation import evaluate_clustering
+    
 def find_optimal_k(X: np.ndarray, k_range: range = range(2, 13)) -> pd.DataFrame:
     results = []
     for k in k_range:
